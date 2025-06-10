@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Desempenho da Turma - EJA</title>
+    <!-- Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Biblioteca ApexCharts para gráficos interativos -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- Fontes do Google para um visual mais agradável -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilo base para a página */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        /* Efeito de sombra e transição para os cards */
+        .dashboard-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        /* Customização da fonte dos gráficos */
+        .apexcharts-tooltip, .apexcharts-legend-text, .apexcharts-xaxis-label, .apexcharts-yaxis-label, .apexcharts-title-text, .apexcharts-data-labels {
+            font-family: 'Inter', sans-serif !important;
+        }
+        /* Estilo para o seletor de turma */
+        .class-selector {
+            appearance: none;
+            background-color: #fff;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right .7em top 50%;
+            background-size: .65em auto;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Cabeçalho do Painel -->
+        <header class="mb-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                    <h1 class="text-3xl font-bold text-slate-800">Painel de Desempenho da EJA</h1>
+                    <p id="dashboard-subtitle" class="text-slate-600 mt-1">Análise de turmas com base nos estudantes com participação efetiva.</p>
+                </div>
+                <div class="mt-4 sm:mt-0">
+                    <label for="class-selector" class="block text-sm font-medium text-slate-700 mb-1">Selecione a Visão</label>
+                    <select id="class-selector" class="class-selector w-full sm:w-52 rounded-md border-gray-300 shadow-sm pl-3 pr-10 py-2 text-base focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <option>FASE 1</option>
+                        <option>FASE 2</option>
+                        <option>FASE 3</option>
+                        <option>FASE 4</option>
+                        <option>Comparativo Real</option>
+                    </select>
+                </div>
+            </div>
+        </header>
+
+        <!-- Container para a visão individual -->
+        <div id="individual-view">
+            <div id="kpi-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="dashboard-card bg-white p-6 rounded-lg shadow-md min-h-[400px]"><div id="frequency-chart"></div></div>
+                <div class="dashboard-card bg-white p-6 rounded-lg shadow-md min-h-[400px]"><div id="status-chart"></div></div>
+                <div class="dashboard-card bg-white p-6 rounded-lg shadow-md lg:col-span-2 min-h-[400px]"><div id="grades-chart"></div></div>
+            </div>
+        </div>
+        
+        <!-- Container para a visão comparativa -->
+        <div id="comparison-view" class="hidden">
+             <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div class="dashboard-card bg-white p-6 rounded-lg shadow-md min-h-[420px]"><div id="comparison-grades-chart"></div></div>
+                <div class="dashboard-card bg-white p-6 rounded-lg shadow-md min-h-[420px]"><div id="comparison-frequency-chart"></div></div>
+                <div class="dashboard-card bg-white p-6 rounded-lg shadow-md xl:col-span-2 min-h-[420px]"><div id="comparison-participation-chart"></div></div>
+            </div>
+        </div>
+        
+        <!-- Rodapé -->
+        <footer class="text-center mt-10 text-sm text-slate-500">
+            <p>Painel gerado em: <span id="generation-date"></span></p>
+            <p class="mt-1">Dados extraídos e filtrados dos relatórios das turmas da EJA.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // --- BANCO DE DADOS CENTRAL ---
+            const allData = {
+                'FASE 1': [
+                    { name: 'FABIANA DO NASCIMENTO', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 28.0, disciplines_below_6: 0 },
+                    { name: 'MAURICEIA OLÍMPIO BARBOSA', grades: { 'Português': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 20.0, disciplines_below_6: 8 },
+                    { name: 'QUITÉRIA ELIAS DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 60.0, disciplines_below_6: 0 }
+                ],
+                'FASE 2': [
+                    { name: 'ANA MARIA DA SILVA', grades: { 'Português': 6.0, 'Inglês': 7.0, 'Arte': 7.0, 'Ed. Física': 6.5, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 70.0, disciplines_below_6: 0 },
+                    { name: 'ANGELA LIMA DE PONTES', grades: { 'Português': 4.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 8.0, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 94.0, disciplines_below_6: 1 },
+                    { name: 'EDILEUZA GREGÓRIO MATIAS', grades: { 'Português': 6.5, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 96.0, disciplines_below_6: 0 },
+                    { name: 'GILDA BEZERRA DA SILVA', grades: { 'Português': 7.5, 'Inglês': 8.5, 'Arte': 8.0, 'Ed. Física': 4.0, 'Matemática': 7.0, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 7.5 }, frequency: 84.0, disciplines_below_6: 1 },
+                    { name: 'JOSÉ ANTÔNIO DE MELO', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 6.0, disciplines_below_6: 0 },
+                    { name: 'JOSEANE BISPO DOS SANTOS', grades: { 'Português': 7.0, 'Inglês': 7.0, 'Arte': 7.5, 'Ed. Física': 6.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 6.5 }, frequency: 76.0, disciplines_below_6: 0 },
+                    { name: 'LUCIDALVA ALVES DE MELO', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 6.5 }, frequency: 98.0, disciplines_below_6: 0 },
+                    { name: 'MANOEL JOÃO DE LIMA', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 82.0, disciplines_below_6: 0 },
+                    { name: 'MARIA BETÂNIA ARAUJO', grades: { 'Português': 8.5, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 94.0, disciplines_below_6: 0 },
+                    { name: 'MARIA CICERA DA SILVA', grades: { 'Português': 8.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 8.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 90.0, disciplines_below_6: 0 },
+                    { name: 'MARIA DO SOCORRO LUCIO', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 7.5, 'Ciências': 7.5, 'História': 7.0, 'Geografia': 7.0 }, frequency: 90.0, disciplines_below_6: 0 },
+                    { name: 'MARIA DOS SANTOS DA SILVA', grades: { 'Português': 5.0, 'Inglês': 6.0, 'Arte': 5.5, 'Ed. Física': 5.0, 'Matemática': 4.5, 'Ciências': 5.0, 'História': 4.0, 'Geografia': 5.0 }, frequency: 88.0, disciplines_below_6: 7 },
+                    { name: 'MARIA IZIDORIO BARROS', grades: { 'Português': 8.5, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 92.0, disciplines_below_6: 0 },
+                    { name: 'ROSELI FLORIANO SOUTO', grades: { 'Português': 7.5, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 90.0, disciplines_below_6: 0 },
+                    { name: 'SUZIMARA DA CRUZ', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.5, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 90.0, disciplines_below_6: 0 },
+                    { name: 'VANIA ALVES DOS SANTOS', grades: { 'Português': 7.5, 'Inglês': 9.0, 'Arte': 9.0, 'Ed. Física': 7.5, 'Matemática': 8.0, 'Ciências': 8.0, 'História': 7.5, 'Geografia': 8.0 }, frequency: 96.0, disciplines_below_6: 0 }
+                ].concat([
+                    { name: 'CARLOS ALBERTO PROTASIO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 0.0, disciplines_below_6: 8 },
+                    { name: 'CLAUDINEIDE APARECIDA', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 8.0, disciplines_below_6: 8 },
+                    { name: 'CLEONICE MARIA ALVES', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 8.0, disciplines_below_6: 8 },
+                    { name: 'KELLY NASCIMENTO CAMPOS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 6.0, disciplines_below_6: 8 },
+                    { name: 'MARIA IZABEL COELHO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 2.0, disciplines_below_6: 8 }
+                ]),
+                'FASE 3': [
+                    { name: 'AGVALDO SANTILINO', grades: { 'Português': 8.0, 'Inglês': 8.0, 'Arte': 5.0, 'Ed. Física': 4.0, 'Matemática': 7.5, 'Ciências': 8.5, 'História': 7.0, 'Geografia': 8.0, 'Ens. Religioso': 8.0 }, frequency: 67.8, disciplines_below_6: 2 },
+                    { name: 'ALEXANDRO OLIVEIRA', grades: { 'Português': 9.0, 'Inglês': 8.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 9.0 }, frequency: 80.5, disciplines_below_6: 0 },
+                    { name: 'BENJAMIM BARROS', grades: { 'Português': 3.0, 'Inglês': 3.0, 'Arte': 6.0, 'Ed. Física': 6.5, 'Matemática': 0.0, 'Ciências': 2.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 47.1, disciplines_below_6: 6 },
+                    { name: 'CRIS LOPES', grades: { 'Português': 9.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 10.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 9.5, 'Geografia': 9.5, 'Ens. Religioso': 8.0 }, frequency: 82.8, disciplines_below_6: 0 },
+                    { name: 'EDVAN MACIEL', grades: { 'Português': 3.0, 'Inglês': 3.0, 'Arte': 0.0, 'Ed. Física': 4.0, 'Matemática': 0.0, 'Ciências': 2.5, 'História': 5.0, 'Geografia': 0.0, 'Ens. Religioso': 7.0 }, frequency: 57.9, disciplines_below_6: 8 },
+                    { name: 'ELIANE DA SILVA', grades: { 'Português': 10.0, 'Inglês': 9.0, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 9.0, 'História': 10.0, 'Geografia': 9.0, 'Ens. Religioso': 8.0 }, frequency: 91.6, disciplines_below_6: 0 },
+                    { name: 'EVERALDO JUVENAL', grades: { 'Português': 7.5, 'Inglês': 8.0, 'Arte': 7.5, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 7.5, 'História': 7.5, 'Geografia': 7.0, 'Ens. Religioso': 7.5 }, frequency: 62.8, disciplines_below_6: 0 },
+                    { name: 'FABIANA DA SILVA', grades: { 'Português': 4.0, 'Inglês': 4.0, 'Arte': 9.0, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 0.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 8.0 }, frequency: 60.9, disciplines_below_6: 3 },
+                    { name: 'MARIZA TAVARES', grades: { 'Português': 8.5, 'Inglês': 7.5, 'Arte': 7.5, 'Ed. Física': 8.0, 'Matemática': 5.5, 'Ciências': 9.0, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 8.5 }, frequency: 94.6, disciplines_below_6: 1 },
+                    { name: 'MAYARA DO NASCIMENTO', grades: { 'Português': 2.0, 'Inglês': 2.0, 'Arte': 6.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 6.0, 'Ens. Religioso': 0.0 }, frequency: 48.3, disciplines_below_6: 6 },
+                    { name: 'PAULO HENRIQUE', grades: { 'Português': 8.0, 'Inglês': 8.0, 'Arte': 7.5, 'Ed. Física': 6.0, 'Matemática': 5.5, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 81.6, disciplines_below_6: 1 },
+                    { name: 'VALDELICE SANTANA', grades: { 'Português': 7.5, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 7.0, 'Matemática': 10.0, 'Ciências': 9.5, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 10.0 }, frequency: 97.7, disciplines_below_6: 0 },
+                ].concat([ 
+                    { name: 'RAYANNE CONSTANTINO', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 3.5, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 33.0, disciplines_below_6: 8 },
+                    { name: 'ERIVALDA EVARISTO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 31.4, disciplines_below_6: 8 },
+                    { name: 'GEDEÃO CORDEIRO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 31.4, disciplines_below_6: 8 },
+                    { name: 'MARIA DO SOCORRO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 36.0, disciplines_below_6: 8 },
+                    { name: 'ROSIANE DIAS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 44.4, disciplines_below_6: 8 }
+                ]),
+                'FASE 4': [
+                    { name: 'ÁLIFE RIAN FERREIRA', grades: { 'Português': 6.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 9.0, 'Ciências': 5.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 7.0 }, frequency: 80.0, disciplines_below_6: 1 },
+                    { name: 'AMAURI LINO DA SILVA', grades: { 'Português': 6.0, 'Inglês': 7.5, 'Arte': 9.5, 'Ed. Física': 2.5, 'Matemática': 8.0, 'Ciências': 4.0, 'História': 6.0, 'Geografia': 5.0, 'Ens. Religioso': 8.0 }, frequency: 75.8, disciplines_below_6: 3 },
+                    { name: 'ΑΝΑ ΜARIA PROTASIA', grades: { 'Português': 9.0, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 9.0, 'Matemática': 2.5, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 80.4, disciplines_below_6: 1 },
+                    { name: 'CAUÊ DA CONCEIÇÃO', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 7.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 8.5 }, frequency: 71.5, disciplines_below_6: 0 },
+                    { name: 'CREMILDA HONORIO', grades: { 'Português': 8.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 8.5, 'Matemática': 8.5, 'Ciências': 6.5, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 8.5 }, frequency: 88.8, disciplines_below_6: 0 },
+                    { name: 'DANIELE BATISTA', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 2.0, 'Matemática': 7.5, 'Ciências': 6.0, 'História': 6.5, 'Geografia': 0.0, 'Ens. Religioso': 6.0 }, frequency: 58.5, disciplines_below_6: 2 },
+                    { name: 'JOSÉ ALEXANDRE', grades: { 'Português': 6.5, 'Inglês': 7.5, 'Arte': 7.0, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 6.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 59.6, disciplines_below_6: 0 },
+                    { name: 'JOSE FILIPE TEIXEIRA', grades: { 'Português': 6.0, 'Inglês': 6.5, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 5.5, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 46.5, disciplines_below_6: 6 },
+                    { name: 'LEONICE DOS SANTOS', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 8.5, 'Ens. Religioso': 9.0 }, frequency: 90.0, disciplines_below_6: 0 },
+                    { name: 'LINDIANA VILELA', grades: { 'Português': 7.5, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 7.5, 'Ciências': 8.5, 'História': 6.5, 'Geografia': 7.0, 'Ens. Religioso': 9.5 }, frequency: 66.5, disciplines_below_6: 0 },
+                    { name: 'MAÍSA SILVA ANDRADE', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.5, 'Ed. Física': 8.5, 'Matemática': 7.5, 'Ciências': 6.5, 'História': 7.5, 'Geografia': 8.0, 'Ens. Religioso': 9.0 }, frequency: 88.1, disciplines_below_6: 0 },
+                    { name: 'MARCOS FELIPE', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 9.0, 'Matemática': 8.0, 'Ciências': 4.0, 'História': 6.0, 'Geografia': 4.0, 'Ens. Religioso': 7.0 }, frequency: 60.4, disciplines_below_6: 3 },
+                    { name: 'MATEUS ARAÚJO', grades: { 'Português': 6.5, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 8.5 }, frequency: 70.8, disciplines_below_6: 0 },
+                    { name: 'ROMÁRIO PEREIRA', grades: { 'Português': 6.5, 'Inglês': 7.5, 'Arte': 8.5, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 5.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 6.5 }, frequency: 93.1, disciplines_below_6: 1 },
+                    { name: 'ROSEANE RODRIGUES', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 8.5, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 97.7, disciplines_below_6: 0 },
+                    { name: 'TAMIRES ARRUDA', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 9.5, 'Ciências': 9.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 92.7, disciplines_below_6: 0 },
+                    { name: 'VALDEMIR ALVES', grades: { 'Português': 8.0, 'Inglês': 7.5, 'Arte': 8.5, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 5.5, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 80.8, disciplines_below_6: 1 },
+                    { name: 'VANDA DA SILVA', grades: { 'Português': 9.5, 'Inglês': 9.5, 'Arte': 9.5, 'Ed. Física': 8.5, 'Matemática': 9.5, 'Ciências': 6.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 99.2, disciplines_below_6: 0 },
+                    { name: 'WILIMA SOBRAL', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 9.5, 'Matemática': 9.0, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 98.8, disciplines_below_6: 0 },
+                ].concat([ 
+                    { name: 'ALISSON HENRIQUE', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 53.1, disciplines_below_6: 8 },
+                    { name: 'FABRICIO DA SILVA', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 54.6, disciplines_below_6: 8 },
+                    { name: 'VALDERIO BARROS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 33.8, disciplines_below_6: 8 }
+                ])
+            };
+            
+            // Dados extraídos dos relatórios GERAIS (incluindo todos os matriculados)
+            const generalReportData = {
+                'FASE 1': { enrolled: 3, avgGrade: 4.0, avgFrequency: 36.0 },
+                'FASE 2': { enrolled: 21, avgGrade: 5.5, avgFrequency: 65.0 },
+                'FASE 3': { enrolled: 17, avgGrade: 4.7, avgFrequency: 62.0 },
+                'FASE 4': { enrolled: 22, avgGrade: 6.2, avgFrequency: 75.0 }
+            };
+
+            // Variáveis para armazenar as instâncias dos gráficos
+            let charts = {};
+            const kpiContainer = document.getElementById('kpi-container');
+            const individualView = document.getElementById('individual-view');
+            const comparisonView = document.getElementById('comparison-view');
+            const dashboardSubtitle = document.getElementById('dashboard-subtitle');
+
+            // Função para calcular métricas de alunos ativos
+            function calculateActiveMetrics(students) {
+                const activeStudents = students.filter(student => Object.values(student.grades).some(grade => grade > 0));
+                const totalActive = activeStudents.length;
+                if (totalActive === 0) return { totalActive: 0, avgGrade: 0, avgFrequency: 0, atRisk: 0, approved: 0 };
+
+                const avgFrequency = activeStudents.reduce((acc, s) => acc + s.frequency, 0) / totalActive;
+                const totalGradesSum = activeStudents.reduce((sum, s) => sum + Object.values(s.grades).reduce((s, g) => s + g, 0), 0);
+                const totalGradesCount = activeStudents.reduce((count, s) => count + Object.keys(s.grades).length, 0);
+                const avgGrade = totalGradesCount > 0 ? totalGradesSum / totalGradesCount : 0;
+                const atRisk = activeStudents.filter(s => s.frequency < 75).length;
+                const approved = activeStudents.filter(s => s.frequency >= 75 && s.disciplines_below_6 < 3).length;
+                
+                return { totalActive, avgGrade, avgFrequency, atRisk, approved, students: activeStudents };
+            }
+
+            // --- FUNÇÃO PARA RENDERIZAR A VISÃO COMPARATIVA ---
+            function renderComparisonView() {
+                individualView.classList.add('hidden');
+                comparisonView.classList.remove('hidden');
+                dashboardSubtitle.textContent = 'Comparativo entre dados gerais e dados de alunos ativos por fase.';
+
+                const phases = Object.keys(allData);
+                const comparisonData = phases.map(phase => {
+                    const general = generalReportData[phase];
+                    const activeMetrics = calculateActiveMetrics(allData[phase]);
+                    return {
+                        phase,
+                        general,
+                        active: {
+                            enrolled: activeMetrics.totalActive,
+                            avgGrade: activeMetrics.avgGrade,
+                            avgFrequency: activeMetrics.avgFrequency,
+                        }
+                    };
+                });
+
+                // Destrói gráficos antigos
+                Object.values(charts).forEach(chart => chart?.destroy());
+                
+                // Gráfico 1: Comparativo de Média de Notas
+                const gradesChartOptions = {
+                    series: [{
+                        name: 'Média Geral (Relatório)',
+                        data: comparisonData.map(d => d.general.avgGrade.toFixed(1))
+                    }, {
+                        name: 'Média Alunos Ativos',
+                        data: comparisonData.map(d => d.active.avgGrade.toFixed(1))
+                    }],
+                    chart: { type: 'bar', height: 400, toolbar: { show: true, tools: { download: true } }},
+                    plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+                    dataLabels: { enabled: true, formatter: (val) => val, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }},
+                    stroke: { show: true, width: 2, colors: ['transparent'] },
+                    xaxis: { categories: phases },
+                    yaxis: { title: { text: 'Nota Média' }, min: 0, max: 10 },
+                    fill: { opacity: 1 },
+                    colors: ['#ef4444', '#22c55e'], // Vermelho para geral, Verde para ativo
+                    title: { text: 'Impacto da Participação na Média de Notas', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    tooltip: { y: { formatter: (val) => `${val} pontos` } }
+                };
+                charts.comparisonGrades = new ApexCharts(document.querySelector("#comparison-grades-chart"), gradesChartOptions);
+                charts.comparisonGrades.render();
+
+                // Gráfico 2: Comparativo de Frequência
+                const freqChartOptions = {
+                    series: [{
+                        name: 'Frequência Geral (Relatório)',
+                        data: comparisonData.map(d => d.general.avgFrequency.toFixed(1))
+                    }, {
+                        name: 'Frequência Alunos Ativos',
+                        data: comparisonData.map(d => d.active.avgFrequency.toFixed(1))
+                    }],
+                    chart: { type: 'bar', height: 400, toolbar: { show: true } },
+                    plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
+                    dataLabels: { enabled: true, formatter: (val) => `${val}%`, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }},
+                    xaxis: { categories: phases },
+                    yaxis: { title: { text: 'Frequência Média (%)' }, min: 0, max: 100 },
+                    colors: ['#f59e0b', '#3b82f6'], // Laranja para geral, Azul para ativo
+                    title: { text: 'Impacto da Participação na Frequência Média', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    tooltip: { y: { formatter: (val) => `${val}%` } }
+                };
+                charts.comparisonFrequency = new ApexCharts(document.querySelector("#comparison-frequency-chart"), freqChartOptions);
+                charts.comparisonFrequency.render();
+
+                // Gráfico 3: Participação de Alunos
+                const participationChartOptions = {
+                    series: [{
+                        name: 'Alunos Ativos',
+                        data: comparisonData.map(d => d.active.enrolled)
+                    }, {
+                        name: 'Alunos Evadidos / Inativos',
+                        data: comparisonData.map(d => d.general.enrolled - d.active.enrolled)
+                    }],
+                    chart: { type: 'bar', height: 400, stacked: true, toolbar: { show: true } },
+                    plotOptions: { bar: { horizontal: true } },
+                    stroke: { width: 1, colors: ['#fff'] },
+                    xaxis: { categories: phases, title: { text: 'Número de Alunos' } },
+                    yaxis: { title: { text: 'Fases' } },
+                    colors: ['#16a34a', '#9ca3af'],
+                    title: { text: 'Comparativo de Alunos Matriculados vs. Ativos', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    fill: { opacity: 1 },
+                    legend: { position: 'top', horizontalAlign: 'left', offsetX: 40 }
+                };
+                charts.comparisonParticipation = new ApexCharts(document.querySelector("#comparison-participation-chart"), participationChartOptions);
+                charts.comparisonParticipation.render();
+            }
+            
+            // --- FUNÇÃO PARA RENDERIZAR A VISÃO INDIVIDUAL ---
+            function renderIndividualView(className) {
+                comparisonView.classList.add('hidden');
+                individualView.classList.remove('hidden');
+                dashboardSubtitle.textContent = 'Análise de turmas com base nos estudantes com participação efetiva.';
+
+                const rawData = allData[className];
+                const { totalActive, avgGrade, avgFrequency, atRisk, approved, students } = calculateActiveMetrics(rawData);
+                
+                kpiContainer.innerHTML = `
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
+                        <h2 class="text-sm font-medium text-slate-500">Alunos Ativos</h2>
+                        <p class="text-3xl font-bold text-slate-800 mt-1">${totalActive} <span class="text-base font-normal text-slate-500">de ${rawData.length}</span></p>
+                    </div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
+                        <h2 class="text-sm font-medium text-slate-500">Média Geral das Notas</h2>
+                        <p class="text-3xl font-bold text-slate-800 mt-1">${avgGrade.toFixed(1)}</p>
+                    </div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-amber-500">
+                        <h2 class="text-sm font-medium text-slate-500">Média de Frequência</h2>
+                        <p class="text-3xl font-bold text-slate-800 mt-1">${avgFrequency.toFixed(1)}%</p>
+                    </div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
+                        <h2 class="text-sm font-medium text-slate-500">Risco (Freq. < 75%)</h2>
+                        <p class="text-3xl font-bold text-slate-800 mt-1">${atRisk}</p>
+                    </div>
+                `;
+                
+                Object.values(charts).forEach(chart => chart?.destroy());
+
+                const emptyState = (selector) => {
+                    document.querySelector(selector).innerHTML = `<div class="flex items-center justify-center h-full"><p class='text-center text-slate-500'>Não há dados para exibir para esta turma.</p></div>`;
+                };
+
+                if (totalActive === 0) {
+                    emptyState("#frequency-chart"); emptyState("#status-chart"); emptyState("#grades-chart");
+                    return;
+                }
+
+                const frequencyChartOptions = {
+                    series: [{ name: 'Frequência', data: students.map(s => s.frequency.toFixed(1)) }],
+                    chart: { type: 'bar', height: 350 + students.length * 5, toolbar: { show: false } },
+                    plotOptions: { bar: { borderRadius: 4, horizontal: true, distributed: true } },
+                    dataLabels: { enabled: true, formatter: val => `${val}%`, style: { colors: ['#fff'] } },
+                    xaxis: { categories: students.map(s => s.name), title: { text: 'Percentual de Frequência (%)' } },
+                    title: { text: 'Frequência por Aluno Ativo', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    legend: { show: false },
+                    colors: ['#3b82f6', '#16a34a', '#ef4444', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#d946ef', '#64748b', '#0ea5e9', '#e11d48', '#facc15'],
+                    tooltip: { y: { formatter: val => `${val}%` } }
+                };
+                charts.frequency = new ApexCharts(document.querySelector("#frequency-chart"), frequencyChartOptions);
+                charts.frequency.render();
+
+                const statusChartOptions = {
+                    series: [approved, atRisk],
+                    chart: { type: 'donut', height: 350 },
+                    labels: ['Situação Confortável', 'Risco (Frequência Baixa)'],
+                    title: { text: 'Panorama Geral dos Alunos Ativos', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    colors: ['#22c55e', '#f59e0b'], legend: { position: 'bottom' }
+                };
+                charts.status = new ApexCharts(document.querySelector("#status-chart"), statusChartOptions);
+                charts.status.render();
+                
+                const allSubjects = [...new Set(students.flatMap(s => Object.keys(s.grades)))];
+                const subjectAverages = allSubjects.map(subject => {
+                    let total = 0, count = 0;
+                    students.forEach(student => {
+                        if (student.grades[subject] !== undefined) {
+                            total += student.grades[subject];
+                            count++;
+                        }
+                    });
+                    return count > 0 ? (total / count) : 0;
+                });
+
+                const gradesChartOptions = {
+                    series: [{ name: 'Média da Turma', data: subjectAverages.map(avg => avg.toFixed(1)) }],
+                    chart: { type: 'bar', height: 350, toolbar: { show: false } },
+                    plotOptions: { bar: { borderRadius: 4, dataLabels: { position: 'top' } } },
+                    dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] } },
+                    xaxis: { categories: allSubjects, position: 'bottom' },
+                    yaxis: { title: { text: 'Nota Média' }, min: 0, max: 10 },
+                    title: { text: `Média de Notas por Disciplina (${className})`, align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    colors: ['#1d4ed8']
+                };
+                charts.grades = new ApexCharts(document.querySelector("#grades-chart"), gradesChartOptions);
+                charts.grades.render();
+            }
+
+            // --- INICIALIZAÇÃO E EVENTOS ---
+            const classSelector = document.getElementById('class-selector');
+            
+            classSelector.addEventListener('change', (e) => {
+                const selectedValue = e.target.value;
+                if (selectedValue === 'Comparativo Real') {
+                    renderComparisonView();
+                } else {
+                    renderIndividualView(selectedValue);
+                }
+            });
+
+            renderIndividualView(classSelector.value); // Carrega a primeira turma por padrão
+            document.getElementById('generation-date').textContent = new Date().toLocaleString('pt-BR');
+        });
+    </script>
+</body>
+</html>
