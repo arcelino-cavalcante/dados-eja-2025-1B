@@ -13,25 +13,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilo base para a página */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9; /* slate-100 */
-        }
-        /* Efeito de sombra e transição para os cards */
-        .dashboard-card {
-            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        }
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-        }
-        /* Customização da fonte dos gráficos */
-        .apexcharts-tooltip, .apexcharts-legend-text, .apexcharts-xaxis-label, .apexcharts-yaxis-label, .apexcharts-title-text, .apexcharts-data-labels {
-            font-family: 'Inter', sans-serif !important;
-        }
-        /* Estilo para o seletor de turma */
-        .class-selector {
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
+        .dashboard-card { transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+        .dashboard-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1); }
+        .apexcharts-tooltip, .apexcharts-legend-text, .apexcharts-xaxis-label, .apexcharts-yaxis-label, .apexcharts-title-text, .apexcharts-data-labels { font-family: 'Inter', sans-serif !important; }
+        .custom-selector {
             appearance: none;
             background-color: #fff;
             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
@@ -46,20 +32,20 @@
     <div class="max-w-7xl mx-auto">
         <!-- Cabeçalho do Painel -->
         <header class="mb-8">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-slate-800">Painel de Desempenho da EJA</h1>
                     <p id="dashboard-subtitle" class="text-slate-600 mt-1">Análise de turmas com base nos estudantes com participação efetiva.</p>
                 </div>
-                <div class="mt-4 sm:mt-0">
-                    <label for="class-selector" class="block text-sm font-medium text-slate-700 mb-1">Selecione a Visão</label>
-                    <select id="class-selector" class="class-selector w-full sm:w-52 rounded-md border-gray-300 shadow-sm pl-3 pr-10 py-2 text-base focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        <option>FASE 1</option>
-                        <option>FASE 2</option>
-                        <option>FASE 3</option>
-                        <option>FASE 4</option>
-                        <option>Comparativo Real</option>
-                    </select>
+                <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+                    <div>
+                         <label for="school-selector" class="block text-sm font-medium text-slate-700 mb-1">Selecione a Escola</label>
+                         <select id="school-selector" class="custom-selector w-full rounded-md border-gray-300 shadow-sm pl-3 pr-10 py-2 text-base focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
+                    <div>
+                        <label for="view-selector" class="block text-sm font-medium text-slate-700 mb-1">Selecione a Visão</label>
+                        <select id="view-selector" class="custom-selector w-full rounded-md border-gray-300 shadow-sm pl-3 pr-10 py-2 text-base focus:outline-none focus:ring-blue-500 focus:border-blue-500"></select>
+                    </div>
                 </div>
             </div>
         </header>
@@ -83,7 +69,6 @@
             </div>
         </div>
         
-        <!-- Rodapé -->
         <footer class="text-center mt-10 text-sm text-slate-500">
             <p>Painel gerado em: <span id="generation-date"></span></p>
             <p class="mt-1">Dados extraídos e filtrados dos relatórios das turmas da EJA.</p>
@@ -92,105 +77,134 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-
+            
             // --- BANCO DE DADOS CENTRAL ---
-            const allData = {
-                'FASE 1': [
-                    { name: 'FABIANA DO NASCIMENTO', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 28.0, disciplines_below_6: 0 },
-                    { name: 'MAURICEIA OLÍMPIO BARBOSA', grades: { 'Português': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 20.0, disciplines_below_6: 8 },
-                    { name: 'QUITÉRIA ELIAS DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 60.0, disciplines_below_6: 0 }
-                ],
-                'FASE 2': [
-                    { name: 'ANA MARIA DA SILVA', grades: { 'Português': 6.0, 'Inglês': 7.0, 'Arte': 7.0, 'Ed. Física': 6.5, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 70.0, disciplines_below_6: 0 },
-                    { name: 'ANGELA LIMA DE PONTES', grades: { 'Português': 4.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 8.0, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 94.0, disciplines_below_6: 1 },
-                    { name: 'EDILEUZA GREGÓRIO MATIAS', grades: { 'Português': 6.5, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 96.0, disciplines_below_6: 0 },
-                    { name: 'GILDA BEZERRA DA SILVA', grades: { 'Português': 7.5, 'Inglês': 8.5, 'Arte': 8.0, 'Ed. Física': 4.0, 'Matemática': 7.0, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 7.5 }, frequency: 84.0, disciplines_below_6: 1 },
-                    { name: 'JOSÉ ANTÔNIO DE MELO', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 6.0, disciplines_below_6: 0 },
-                    { name: 'JOSEANE BISPO DOS SANTOS', grades: { 'Português': 7.0, 'Inglês': 7.0, 'Arte': 7.5, 'Ed. Física': 6.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 6.5 }, frequency: 76.0, disciplines_below_6: 0 },
-                    { name: 'LUCIDALVA ALVES DE MELO', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 6.5 }, frequency: 98.0, disciplines_below_6: 0 },
-                    { name: 'MANOEL JOÃO DE LIMA', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 82.0, disciplines_below_6: 0 },
-                    { name: 'MARIA BETÂNIA ARAUJO', grades: { 'Português': 8.5, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 94.0, disciplines_below_6: 0 },
-                    { name: 'MARIA CICERA DA SILVA', grades: { 'Português': 8.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 8.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 90.0, disciplines_below_6: 0 },
-                    { name: 'MARIA DO SOCORRO LUCIO', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 7.5, 'Ciências': 7.5, 'História': 7.0, 'Geografia': 7.0 }, frequency: 90.0, disciplines_below_6: 0 },
-                    { name: 'MARIA DOS SANTOS DA SILVA', grades: { 'Português': 5.0, 'Inglês': 6.0, 'Arte': 5.5, 'Ed. Física': 5.0, 'Matemática': 4.5, 'Ciências': 5.0, 'História': 4.0, 'Geografia': 5.0 }, frequency: 88.0, disciplines_below_6: 7 },
-                    { name: 'MARIA IZIDORIO BARROS', grades: { 'Português': 8.5, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 92.0, disciplines_below_6: 0 },
-                    { name: 'ROSELI FLORIANO SOUTO', grades: { 'Português': 7.5, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 90.0, disciplines_below_6: 0 },
-                    { name: 'SUZIMARA DA CRUZ', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.5, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 90.0, disciplines_below_6: 0 },
-                    { name: 'VANIA ALVES DOS SANTOS', grades: { 'Português': 7.5, 'Inglês': 9.0, 'Arte': 9.0, 'Ed. Física': 7.5, 'Matemática': 8.0, 'Ciências': 8.0, 'História': 7.5, 'Geografia': 8.0 }, frequency: 96.0, disciplines_below_6: 0 }
-                ].concat([
-                    { name: 'CARLOS ALBERTO PROTASIO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 0.0, disciplines_below_6: 8 },
-                    { name: 'CLAUDINEIDE APARECIDA', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 8.0, disciplines_below_6: 8 },
-                    { name: 'CLEONICE MARIA ALVES', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 8.0, disciplines_below_6: 8 },
-                    { name: 'KELLY NASCIMENTO CAMPOS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 6.0, disciplines_below_6: 8 },
-                    { name: 'MARIA IZABEL COELHO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 2.0, disciplines_below_6: 8 }
-                ]),
-                'FASE 3': [
-                    { name: 'AGVALDO SANTILINO', grades: { 'Português': 8.0, 'Inglês': 8.0, 'Arte': 5.0, 'Ed. Física': 4.0, 'Matemática': 7.5, 'Ciências': 8.5, 'História': 7.0, 'Geografia': 8.0, 'Ens. Religioso': 8.0 }, frequency: 67.8, disciplines_below_6: 2 },
-                    { name: 'ALEXANDRO OLIVEIRA', grades: { 'Português': 9.0, 'Inglês': 8.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 9.0 }, frequency: 80.5, disciplines_below_6: 0 },
-                    { name: 'BENJAMIM BARROS', grades: { 'Português': 3.0, 'Inglês': 3.0, 'Arte': 6.0, 'Ed. Física': 6.5, 'Matemática': 0.0, 'Ciências': 2.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 47.1, disciplines_below_6: 6 },
-                    { name: 'CRIS LOPES', grades: { 'Português': 9.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 10.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 9.5, 'Geografia': 9.5, 'Ens. Religioso': 8.0 }, frequency: 82.8, disciplines_below_6: 0 },
-                    { name: 'EDVAN MACIEL', grades: { 'Português': 3.0, 'Inglês': 3.0, 'Arte': 0.0, 'Ed. Física': 4.0, 'Matemática': 0.0, 'Ciências': 2.5, 'História': 5.0, 'Geografia': 0.0, 'Ens. Religioso': 7.0 }, frequency: 57.9, disciplines_below_6: 8 },
-                    { name: 'ELIANE DA SILVA', grades: { 'Português': 10.0, 'Inglês': 9.0, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 9.0, 'História': 10.0, 'Geografia': 9.0, 'Ens. Religioso': 8.0 }, frequency: 91.6, disciplines_below_6: 0 },
-                    { name: 'EVERALDO JUVENAL', grades: { 'Português': 7.5, 'Inglês': 8.0, 'Arte': 7.5, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 7.5, 'História': 7.5, 'Geografia': 7.0, 'Ens. Religioso': 7.5 }, frequency: 62.8, disciplines_below_6: 0 },
-                    { name: 'FABIANA DA SILVA', grades: { 'Português': 4.0, 'Inglês': 4.0, 'Arte': 9.0, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 0.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 8.0 }, frequency: 60.9, disciplines_below_6: 3 },
-                    { name: 'MARIZA TAVARES', grades: { 'Português': 8.5, 'Inglês': 7.5, 'Arte': 7.5, 'Ed. Física': 8.0, 'Matemática': 5.5, 'Ciências': 9.0, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 8.5 }, frequency: 94.6, disciplines_below_6: 1 },
-                    { name: 'MAYARA DO NASCIMENTO', grades: { 'Português': 2.0, 'Inglês': 2.0, 'Arte': 6.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 6.0, 'Ens. Religioso': 0.0 }, frequency: 48.3, disciplines_below_6: 6 },
-                    { name: 'PAULO HENRIQUE', grades: { 'Português': 8.0, 'Inglês': 8.0, 'Arte': 7.5, 'Ed. Física': 6.0, 'Matemática': 5.5, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 81.6, disciplines_below_6: 1 },
-                    { name: 'VALDELICE SANTANA', grades: { 'Português': 7.5, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 7.0, 'Matemática': 10.0, 'Ciências': 9.5, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 10.0 }, frequency: 97.7, disciplines_below_6: 0 },
-                ].concat([ 
-                    { name: 'RAYANNE CONSTANTINO', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 3.5, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 33.0, disciplines_below_6: 8 },
-                    { name: 'ERIVALDA EVARISTO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 31.4, disciplines_below_6: 8 },
-                    { name: 'GEDEÃO CORDEIRO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 31.4, disciplines_below_6: 8 },
-                    { name: 'MARIA DO SOCORRO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 36.0, disciplines_below_6: 8 },
-                    { name: 'ROSIANE DIAS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 44.4, disciplines_below_6: 8 }
-                ]),
-                'FASE 4': [
-                    { name: 'ÁLIFE RIAN FERREIRA', grades: { 'Português': 6.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 9.0, 'Ciências': 5.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 7.0 }, frequency: 80.0, disciplines_below_6: 1 },
-                    { name: 'AMAURI LINO DA SILVA', grades: { 'Português': 6.0, 'Inglês': 7.5, 'Arte': 9.5, 'Ed. Física': 2.5, 'Matemática': 8.0, 'Ciências': 4.0, 'História': 6.0, 'Geografia': 5.0, 'Ens. Religioso': 8.0 }, frequency: 75.8, disciplines_below_6: 3 },
-                    { name: 'ΑΝΑ ΜARIA PROTASIA', grades: { 'Português': 9.0, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 9.0, 'Matemática': 2.5, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 80.4, disciplines_below_6: 1 },
-                    { name: 'CAUÊ DA CONCEIÇÃO', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 7.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 8.5 }, frequency: 71.5, disciplines_below_6: 0 },
-                    { name: 'CREMILDA HONORIO', grades: { 'Português': 8.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 8.5, 'Matemática': 8.5, 'Ciências': 6.5, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 8.5 }, frequency: 88.8, disciplines_below_6: 0 },
-                    { name: 'DANIELE BATISTA', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 2.0, 'Matemática': 7.5, 'Ciências': 6.0, 'História': 6.5, 'Geografia': 0.0, 'Ens. Religioso': 6.0 }, frequency: 58.5, disciplines_below_6: 2 },
-                    { name: 'JOSÉ ALEXANDRE', grades: { 'Português': 6.5, 'Inglês': 7.5, 'Arte': 7.0, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 6.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 59.6, disciplines_below_6: 0 },
-                    { name: 'JOSE FILIPE TEIXEIRA', grades: { 'Português': 6.0, 'Inglês': 6.5, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 5.5, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 46.5, disciplines_below_6: 6 },
-                    { name: 'LEONICE DOS SANTOS', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 8.5, 'Ens. Religioso': 9.0 }, frequency: 90.0, disciplines_below_6: 0 },
-                    { name: 'LINDIANA VILELA', grades: { 'Português': 7.5, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 7.5, 'Ciências': 8.5, 'História': 6.5, 'Geografia': 7.0, 'Ens. Religioso': 9.5 }, frequency: 66.5, disciplines_below_6: 0 },
-                    { name: 'MAÍSA SILVA ANDRADE', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.5, 'Ed. Física': 8.5, 'Matemática': 7.5, 'Ciências': 6.5, 'História': 7.5, 'Geografia': 8.0, 'Ens. Religioso': 9.0 }, frequency: 88.1, disciplines_below_6: 0 },
-                    { name: 'MARCOS FELIPE', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 9.0, 'Matemática': 8.0, 'Ciências': 4.0, 'História': 6.0, 'Geografia': 4.0, 'Ens. Religioso': 7.0 }, frequency: 60.4, disciplines_below_6: 3 },
-                    { name: 'MATEUS ARAÚJO', grades: { 'Português': 6.5, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 8.5 }, frequency: 70.8, disciplines_below_6: 0 },
-                    { name: 'ROMÁRIO PEREIRA', grades: { 'Português': 6.5, 'Inglês': 7.5, 'Arte': 8.5, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 5.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 6.5 }, frequency: 93.1, disciplines_below_6: 1 },
-                    { name: 'ROSEANE RODRIGUES', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 8.5, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 97.7, disciplines_below_6: 0 },
-                    { name: 'TAMIRES ARRUDA', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 9.5, 'Ciências': 9.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 92.7, disciplines_below_6: 0 },
-                    { name: 'VALDEMIR ALVES', grades: { 'Português': 8.0, 'Inglês': 7.5, 'Arte': 8.5, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 5.5, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 80.8, disciplines_below_6: 1 },
-                    { name: 'VANDA DA SILVA', grades: { 'Português': 9.5, 'Inglês': 9.5, 'Arte': 9.5, 'Ed. Física': 8.5, 'Matemática': 9.5, 'Ciências': 6.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 99.2, disciplines_below_6: 0 },
-                    { name: 'WILIMA SOBRAL', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 9.5, 'Matemática': 9.0, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 98.8, disciplines_below_6: 0 },
-                ].concat([ 
-                    { name: 'ALISSON HENRIQUE', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 53.1, disciplines_below_6: 8 },
-                    { name: 'FABRICIO DA SILVA', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 54.6, disciplines_below_6: 8 },
-                    { name: 'VALDERIO BARROS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 33.8, disciplines_below_6: 8 }
-                ])
+            const database = {
+                "Ver. Eliel Peixoto de Melo": {
+                    phases: {
+                        'FASE 1': [{ name: 'FABIANA DO NASCIMENTO', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 28.0, disciplines_below_6: 0 },{ name: 'MAURICEIA OLÍMPIO BARBOSA', grades: { 'Português': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 20.0, disciplines_below_6: 8 },{ name: 'QUITÉRIA ELIAS DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 60.0, disciplines_below_6: 0 }],
+                        'FASE 2': [
+                            { name: 'ANA MARIA DA SILVA', grades: { 'Português': 6.0, 'Inglês': 7.0, 'Arte': 7.0, 'Ed. Física': 6.5, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 70.0, disciplines_below_6: 0 }, { name: 'ANGELA LIMA DE PONTES', grades: { 'Português': 4.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 8.0, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 94.0, disciplines_below_6: 1 }, { name: 'EDILEUZA GREGÓRIO MATIAS', grades: { 'Português': 6.5, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 96.0, disciplines_below_6: 0 }, { name: 'GILDA BEZERRA DA SILVA', grades: { 'Português': 7.5, 'Inglês': 8.5, 'Arte': 8.0, 'Ed. Física': 4.0, 'Matemática': 7.0, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 7.5 }, frequency: 84.0, disciplines_below_6: 1 }, { name: 'JOSÉ ANTÔNIO DE MELO', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 6.0, disciplines_below_6: 0 }, { name: 'JOSEANE BISPO DOS SANTOS', grades: { 'Português': 7.0, 'Inglês': 7.0, 'Arte': 7.5, 'Ed. Física': 6.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 6.5 }, frequency: 76.0, disciplines_below_6: 0 }, { name: 'LUCIDALVA ALVES DE MELO', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 6.5 }, frequency: 98.0, disciplines_below_6: 0 }, { name: 'MANOEL JOÃO DE LIMA', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0 }, frequency: 82.0, disciplines_below_6: 0 }, { name: 'MARIA BETÂNIA ARAUJO', grades: { 'Português': 8.5, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 94.0, disciplines_below_6: 0 }, { name: 'MARIA CICERA DA SILVA', grades: { 'Português': 8.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 8.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 90.0, disciplines_below_6: 0 }, { name: 'MARIA DO SOCORRO LUCIO', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 7.5, 'Ciências': 7.5, 'História': 7.0, 'Geografia': 7.0 }, frequency: 90.0, disciplines_below_6: 0 }, { name: 'MARIA DOS SANTOS DA SILVA', grades: { 'Português': 5.0, 'Inglês': 6.0, 'Arte': 5.5, 'Ed. Física': 5.0, 'Matemática': 4.5, 'Ciências': 5.0, 'História': 4.0, 'Geografia': 5.0 }, frequency: 88.0, disciplines_below_6: 7 }, { name: 'MARIA IZIDORIO BARROS', grades: { 'Português': 8.5, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 92.0, disciplines_below_6: 0 }, { name: 'ROSELI FLORIANO SOUTO', grades: { 'Português': 7.5, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 6.5, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0 }, frequency: 90.0, disciplines_below_6: 0 }, { name: 'SUZIMARA DA CRUZ', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.5, 'Matemática': 9.0, 'Ciências': 8.5, 'História': 8.0, 'Geografia': 8.0 }, frequency: 90.0, disciplines_below_6: 0 }, { name: 'VANIA ALVES DOS SANTOS', grades: { 'Português': 7.5, 'Inglês': 9.0, 'Arte': 9.0, 'Ed. Física': 7.5, 'Matemática': 8.0, 'Ciências': 8.0, 'História': 7.5, 'Geografia': 8.0 }, frequency: 96.0, disciplines_below_6: 0 }
+                        ].concat([{ name: 'CARLOS ALBERTO PROTASIO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 0.0, disciplines_below_6: 8 }, { name: 'CLAUDINEIDE APARECIDA', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 8.0, disciplines_below_6: 8 }, { name: 'CLEONICE MARIA ALVES', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 8.0, disciplines_below_6: 8 }, { name: 'KELLY NASCIMENTO CAMPOS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 6.0, disciplines_below_6: 8 }, { name: 'MARIA IZABEL COELHO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0 }, frequency: 2.0, disciplines_below_6: 8 }]),
+                        'FASE 3': [
+                            { name: 'AGVALDO SANTILINO', grades: { 'Português': 8.0, 'Inglês': 8.0, 'Arte': 5.0, 'Ed. Física': 4.0, 'Matemática': 7.5, 'Ciências': 8.5, 'História': 7.0, 'Geografia': 8.0, 'Ens. Religioso': 8.0 }, frequency: 67.8, disciplines_below_6: 2 }, { name: 'ALEXANDRO OLIVEIRA', grades: { 'Português': 9.0, 'Inglês': 8.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 9.0 }, frequency: 80.5, disciplines_below_6: 0 }, { name: 'BENJAMIM BARROS', grades: { 'Português': 3.0, 'Inglês': 3.0, 'Arte': 6.0, 'Ed. Física': 6.5, 'Matemática': 0.0, 'Ciências': 2.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 47.1, disciplines_below_6: 6 }, { name: 'CRIS LOPES', grades: { 'Português': 9.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 10.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 9.5, 'Geografia': 9.5, 'Ens. Religioso': 8.0 }, frequency: 82.8, disciplines_below_6: 0 }, { name: 'EDVAN MACIEL', grades: { 'Português': 3.0, 'Inglês': 3.0, 'Arte': 0.0, 'Ed. Física': 4.0, 'Matemática': 0.0, 'Ciências': 2.5, 'História': 5.0, 'Geografia': 0.0, 'Ens. Religioso': 7.0 }, frequency: 57.9, disciplines_below_6: 8 }, { name: 'ELIANE DA SILVA', grades: { 'Português': 10.0, 'Inglês': 9.0, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 9.0, 'História': 10.0, 'Geografia': 9.0, 'Ens. Religioso': 8.0 }, frequency: 91.6, disciplines_below_6: 0 }, { name: 'EVERALDO JUVENAL', grades: { 'Português': 7.5, 'Inglês': 8.0, 'Arte': 7.5, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 7.5, 'História': 7.5, 'Geografia': 7.0, 'Ens. Religioso': 7.5 }, frequency: 62.8, disciplines_below_6: 0 }, { name: 'FABIANA DA SILVA', grades: { 'Português': 4.0, 'Inglês': 4.0, 'Arte': 9.0, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 0.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 8.0 }, frequency: 60.9, disciplines_below_6: 3 }, { name: 'MARIZA TAVARES', grades: { 'Português': 8.5, 'Inglês': 7.5, 'Arte': 7.5, 'Ed. Física': 8.0, 'Matemática': 5.5, 'Ciências': 9.0, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 8.5 }, frequency: 94.6, disciplines_below_6: 1 }, { name: 'MAYARA DO NASCIMENTO', grades: { 'Português': 2.0, 'Inglês': 2.0, 'Arte': 6.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 6.0, 'Ens. Religioso': 0.0 }, frequency: 48.3, disciplines_below_6: 6 }, { name: 'PAULO HENRIQUE', grades: { 'Português': 8.0, 'Inglês': 8.0, 'Arte': 7.5, 'Ed. Física': 6.0, 'Matemática': 5.5, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 81.6, disciplines_below_6: 1 }, { name: 'VALDELICE SANTANA', grades: { 'Português': 7.5, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 7.0, 'Matemática': 10.0, 'Ciências': 9.5, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 10.0 }, frequency: 97.7, disciplines_below_6: 0 },
+                        ].concat([{ name: 'RAYANNE CONSTANTINO', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 3.5, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 33.0, disciplines_below_6: 8 }, { name: 'ERIVALDA EVARISTO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 31.4, disciplines_below_6: 8 }, { name: 'GEDEÃO CORDEIRO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 31.4, disciplines_below_6: 8 }, { name: 'MARIA DO SOCORRO', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 36.0, disciplines_below_6: 8 }, { name: 'ROSIANE DIAS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 44.4, disciplines_below_6: 8 }]),
+                        'FASE 4': [
+                            { name: 'ÁLIFE RIAN FERREIRA', grades: { 'Português': 6.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 9.0, 'Ciências': 5.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 7.0 }, frequency: 80.0, disciplines_below_6: 1 }, { name: 'AMAURI LINO DA SILVA', grades: { 'Português': 6.0, 'Inglês': 7.5, 'Arte': 9.5, 'Ed. Física': 2.5, 'Matemática': 8.0, 'Ciências': 4.0, 'História': 6.0, 'Geografia': 5.0, 'Ens. Religioso': 8.0 }, frequency: 75.8, disciplines_below_6: 3 }, { name: 'ΑΝΑ ΜARIA PROTASIA', grades: { 'Português': 9.0, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 9.0, 'Matemática': 2.5, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 80.4, disciplines_below_6: 1 }, { name: 'CAUÊ DA CONCEIÇÃO', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 7.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 8.5 }, frequency: 71.5, disciplines_below_6: 0 }, { name: 'CREMILDA HONORIO', grades: { 'Português': 8.0, 'Inglês': 7.5, 'Arte': 8.0, 'Ed. Física': 8.5, 'Matemática': 8.5, 'Ciências': 6.5, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 8.5 }, frequency: 88.8, disciplines_below_6: 0 }, { name: 'DANIELE BATISTA', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 2.0, 'Matemática': 7.5, 'Ciências': 6.0, 'História': 6.5, 'Geografia': 0.0, 'Ens. Religioso': 6.0 }, frequency: 58.5, disciplines_below_6: 2 }, { name: 'JOSÉ ALEXANDRE', grades: { 'Português': 6.5, 'Inglês': 7.5, 'Arte': 7.0, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 6.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 59.6, disciplines_below_6: 0 }, { name: 'JOSE FILIPE TEIXEIRA', grades: { 'Português': 6.0, 'Inglês': 6.5, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 5.5, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 46.5, disciplines_below_6: 6 }, { name: 'LEONICE DOS SANTOS', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 8.5, 'Ens. Religioso': 9.0 }, frequency: 90.0, disciplines_below_6: 0 }, { name: 'LINDIANA VILELA', grades: { 'Português': 7.5, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 7.5, 'Ciências': 8.5, 'História': 6.5, 'Geografia': 7.0, 'Ens. Religioso': 9.5 }, frequency: 66.5, disciplines_below_6: 0 }, { name: 'MAÍSA SILVA ANDRADE', grades: { 'Português': 7.0, 'Inglês': 8.0, 'Arte': 8.5, 'Ed. Física': 8.5, 'Matemática': 7.5, 'Ciências': 6.5, 'História': 7.5, 'Geografia': 8.0, 'Ens. Religioso': 9.0 }, frequency: 88.1, disciplines_below_6: 0 }, { name: 'MARCOS FELIPE', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 9.0, 'Matemática': 8.0, 'Ciências': 4.0, 'História': 6.0, 'Geografia': 4.0, 'Ens. Religioso': 7.0 }, frequency: 60.4, disciplines_below_6: 3 }, { name: 'MATEUS ARAÚJO', grades: { 'Português': 6.5, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.5, 'Ens. Religioso': 8.5 }, frequency: 70.8, disciplines_below_6: 0 }, { name: 'ROMÁRIO PEREIRA', grades: { 'Português': 6.5, 'Inglês': 7.5, 'Arte': 8.5, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 5.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 6.5 }, frequency: 93.1, disciplines_below_6: 1 }, { name: 'ROSEANE RODRIGUES', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 8.5, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 97.7, disciplines_below_6: 0 }, { name: 'TAMIRES ARRUDA', grades: { 'Português': 9.0, 'Inglês': 9.5, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 9.5, 'Ciências': 9.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 92.7, disciplines_below_6: 0 }, { name: 'VALDEMIR ALVES', grades: { 'Português': 8.0, 'Inglês': 7.5, 'Arte': 8.5, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 5.5, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 80.8, disciplines_below_6: 1 }, { name: 'VANDA DA SILVA', grades: { 'Português': 9.5, 'Inglês': 9.5, 'Arte': 9.5, 'Ed. Física': 8.5, 'Matemática': 9.5, 'Ciências': 6.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 99.2, disciplines_below_6: 0 }, { name: 'WILIMA SOBRAL', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 10.0, 'Ed. Física': 9.5, 'Matemática': 9.0, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 9.5 }, frequency: 98.8, disciplines_below_6: 0 },
+                        ].concat([ { name: 'ALISSON HENRIQUE', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 53.1, disciplines_below_6: 8 }, { name: 'FABRICIO DA SILVA', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 54.6, disciplines_below_6: 8 }, { name: 'VALDERIO BARROS', grades: { 'Português': 0, 'Inglês': 0, 'Arte': 0, 'Ed. Física': 0, 'Matemática': 0, 'Ciências': 0, 'História': 0, 'Geografia': 0, 'Ens. Religioso': 0 }, frequency: 33.8, disciplines_below_6: 8 }])
+                    },
+                    generalReport: {
+                        'FASE 1': { enrolled: 3, avgGrade: 4.0, avgFrequency: 36.0 },
+                        'FASE 2': { enrolled: 21, avgGrade: 5.5, avgFrequency: 65.0 },
+                        'FASE 3': { enrolled: 17, avgGrade: 4.7, avgFrequency: 62.0 },
+                        'FASE 4': { enrolled: 22, avgGrade: 6.2, avgFrequency: 75.0 }
+                    }
+                },
+                "Albino Moreira": {
+                    phases: {
+                        'FASE 1': [
+                            { name: 'EDSON GALDINO', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 5.5, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 86.0, disciplines_below_6: 1 },
+                            { name: 'EROINA JOSEFA DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 92.0, disciplines_below_6: 0 },
+                            { name: 'JOSÉ CÍCERO DE SOUSA', grades: { 'Português': 9.0, 'Arte': 9.0, 'Ed. Física': 8.5, 'Matemática': 8.5, 'Ciências': 9.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'JOSEFA CICERA DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'JOSEFA TEIXEIRA DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 92.0, disciplines_below_6: 0 },
+                            { name: 'JOSEMI TEIXEIRA DA SILVA', grades: { 'Português': 9.0, 'Arte': 9.0, 'Ed. Física': 9.0, 'Matemática': 9.0, 'Ciências': 9.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'MARIA JOSEFA DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'REGINALDO FERREIRA SILVINO', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 98.0, disciplines_below_6: 0 },
+                            { name: 'ROSEMILDA CORDEIRO FERREIRA', grades: { 'Português': 7.0, 'Arte': 7.0, 'Ed. Física': 7.0, 'Matemática': 7.0, 'Ciências': 7.0, 'História': 6.5, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 100.0, disciplines_below_6: 0 }
+                        ],
+                        'FASE 2': [
+                            { name: 'ADEMIL JOSÉ DA SILVA', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 58.0, disciplines_below_6: 0 },
+                            { name: 'JOSÉ DE QUEIRÓS DA SILVA', grades: { 'Português': 7.5, 'Arte': 7.0, 'Ed. Física': 7.0, 'Matemática': 7.0, 'Ciências': 8.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.5 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'JOSÉ EDIVALDO SOUTO DA SILVA', grades: { 'Português': 7.0, 'Arte': 6.5, 'Ed. Física': 6.5, 'Matemática': 7.0, 'Ciências': 6.5, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 96.0, disciplines_below_6: 0 },
+                            { name: 'JOSE EDVAN TEIXEIRA DA SILVA', grades: { 'Português': 9.5, 'Arte': 9.5, 'Ed. Física': 9.0, 'Matemática': 9.5, 'Ciências': 9.5, 'História': 9.5, 'Geografia': 9.5, 'Ens. Religioso': 9.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'JOSÉ MARCOS DA SILVA ARAÚJO', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 74.0, disciplines_below_6: 0 },
+                            { name: 'JOSÉ ROBERTO DA SILVA', grades: { 'Português': 6.0, 'Arte': 8.5, 'Ed. Física': 8.5, 'Matemática': 8.5, 'Ciências': 8.5, 'História': 8.5, 'Geografia': 8.5, 'Ens. Religioso': 8.0 }, frequency: 94.0, disciplines_below_6: 0 },
+                            { name: 'JOSÉ SILVINO DE OLIVEIRA', grades: { 'Português': 7.0, 'Arte': 7.5, 'Ed. Física': 8.0, 'Matemática': 7.5, 'Ciências': 7.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'MARIA APARECIDA DA SILVA', grades: { 'Português': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 2.0, disciplines_below_6: 8 },
+                            { name: 'MARIA DE LOURDES SANTOS', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.5, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 68.0, disciplines_below_6: 0 },
+                            { name: 'MARIA JOSÉ BARBOSA DE SOUZA', grades: { 'Português': 8.5, 'Arte': 8.0, 'Ed. Física': 8.5, 'Matemática': 8.0, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 8.5, 'Ens. Religioso': 8.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'REGINALDO MANDÚ LEITE', grades: { 'Português': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 6.0 }, frequency: 86.0, disciplines_below_6: 0 },
+                            { name: 'ROBERTO FERREIRA DA SILVA', grades: { 'Português': 7.0, 'Arte': 8.0, 'Ed. Física': 7.5, 'Matemática': 8.0, 'Ciências': 8.0, 'História': 7.5, 'Geografia': 8.0, 'Ens. Religioso': 8.0 }, frequency: 98.0, disciplines_below_6: 0 }
+                        ],
+                        'FASE 3': [
+                            { name: 'ALEXANDRO LEITE DO NASCIMENTO', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 8.0, 'Matemática': 10.0, 'Ciências': 9.0, 'História': 8.0, 'Geografia': 7.0, 'Ens. Religioso': 9.0 }, frequency: 85.4, disciplines_below_6: 0 },
+                            { name: 'ÁLISSON KAUA ELOY DA SILVA', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 17.3, disciplines_below_6: 8 },
+                            { name: 'DANILO MORAES DA SILVA', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 26.5, disciplines_below_6: 8 },
+                            { name: 'DOGENILDO MARQUES DA SILVA', grades: { 'Português': 9.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 7.5, 'Matemática': 7.5, 'Ciências': 9.5, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 9.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'EDNALDA MENDES DA SILVA', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 8.5, 'Matemática': 9.0, 'Ciências': 8.0, 'História': 7.5, 'Geografia': 7.0, 'Ens. Religioso': 9.0 }, frequency: 93.8, disciplines_below_6: 0 },
+                            { name: 'ERIVAN DE MENDONCA BARROS', grades: { 'Português': 9.0, 'Inglês': 0.0, 'Arte': 9.0, 'Ed. Física': 7.5, 'Matemática': 6.0, 'Ciências': 7.5, 'História': 6.5, 'Geografia': 7.0, 'Ens. Religioso': 6.0 }, frequency: 97.7, disciplines_below_6: 1 },
+                            { name: 'ERNANDO CORDEIRO DOS SANTOS', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 8.0, 'Geografia': 8.5, 'Ens. Religioso': 9.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'ESPEDITO PEREIRA DOS SANTOS JUNIOR', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 5.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 7.0 }, frequency: 87.3, disciplines_below_6: 1 },
+                            { name: 'GERSON ANJO DA SILVA', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 8.0, 'Matemática': 7.0, 'Ciências': 10.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 99.2, disciplines_below_6: 0 },
+                            { name: 'JOÃO HENRIQUE DOS SANTOS PEIXOTO', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 7.5, 'Ed. Física': 7.0, 'Matemática': 6.5, 'Ciências': 6.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 7.0 }, frequency: 95.4, disciplines_below_6: 0 },
+                            { name: 'JOSÉ ARNALDO NUNES OLIVEIRA', grades: { 'Português': 7.0, 'Inglês': 10.0, 'Arte': 8.5, 'Ed. Física': 7.5, 'Matemática': 6.0, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 7.0, 'Ens. Religioso': 0.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'JOSEFA ORDONIO DOS SANTOS E SILVA', grades: { 'Português': 0.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 7.0, 'Matemática': 6.5, 'Ciências': 0.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 2.0 }, frequency: 81.5, disciplines_below_6: 3 },
+                            { name: 'JOSEVAN JOAQUIM DA SILVA', grades: { 'Português': 7.0, 'Inglês': 10.0, 'Arte': 8.5, 'Ed. Física': 7.5, 'Matemática': 9.0, 'Ciências': 6.5, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 8.0 }, frequency: 91.2, disciplines_below_6: 0 },
+                            { name: 'MARIA APARECIDA DA SILVA LEONARDO', grades: { 'Português': 6.0, 'Inglês': 10.0, 'Arte': 7.5, 'Ed. Física': 7.5, 'Matemática': 7.0, 'Ciências': 6.5, 'História': 6.5, 'Geografia': 6.0, 'Ens. Religioso': 8.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'MARIA LUCICLEIDE DA SILVA', grades: { 'Português': 9.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 7.5, 'Matemática': 9.0, 'Ciências': 10.0, 'História': 0.0, 'Geografia': 6.0, 'Ens. Religioso': 0.0 }, frequency: 98.8, disciplines_below_6: 1 },
+                            { name: 'MARIA LUCIENE LEANDRO DA SILVA', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 9.5, 'Ed. Física': 7.5, 'Matemática': 9.0, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 8.0, 'Ens. Religioso': 8.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'MARIA LUCILENE DA SILVA', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 8.5, 'Matemática': 7.5, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 8.0 }, frequency: 37.7, disciplines_below_6: 6 },
+                            { name: 'MAYCK VINÍCIUS LIRA DA SILVA', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 21.9, disciplines_below_6: 8 },
+                            { name: 'WELLINTON ALVES DA SILVA', grades: { 'Português': 0.0, 'Inglês': 0.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 6.0, 'Ens. Religioso': 0.0 }, frequency: 35.0, disciplines_below_6: 7 },
+                            { name: 'ZENILDO LEITE SILVINO', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 7.5, 'Matemática': 8.0, 'Ciências': 8.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 98.5, disciplines_below_6: 0 }
+                        ],
+                         'FASE 4': [
+                            { name: 'ADRIANA DA SILVA', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 9.5, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 8.0, 'História': 8.5, 'Geografia': 9.0, 'Ens. Religioso': 10.0 }, frequency: 96.2, disciplines_below_6: 0 },
+                            { name: 'ANDRÉ BALBINO DA SILVA', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 5.5, 'Ciências': 6.0, 'História': 6.5, 'Geografia': 7.0, 'Ens. Religioso': 5.5 }, frequency: 90.8, disciplines_below_6: 1 },
+                            { name: 'ARLLAN ALVES DOS SANTOS (PCD)', grades: { 'Português': 6.0, 'Inglês': 6.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 0.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 6.0, 'Ens. Religioso': 0.0 }, frequency: 59.2, disciplines_below_6: 1 },
+                            { name: 'BENAILSON DA SILVA', grades: { 'Português': 0.0, 'Inglês': 7.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 4.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 83.8, disciplines_below_6: 7 },
+                            { name: 'CICERO BATISTA DA SILVA', grades: { 'Português': 0.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 6.0, 'Ciências': 0.0, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 99.2, disciplines_below_6: 4 },
+                            { name: 'ERYSSON GALDINO SILVA MÉLO', grades: { 'Português': 9.5, 'Inglês': 5.0, 'Arte': 6.5, 'Ed. Física': 7.0, 'Matemática': 6.0, 'Ciências': 6.5, 'História': 5.5, 'Geografia': 5.0, 'Ens. Religioso': 6.0 }, frequency: 90.0, disciplines_below_6: 3 },
+                            { name: 'IVANETE JOSEFA ALVES', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 9.0, 'Ed. Física': 8.5, 'Matemática': 9.5, 'Ciências': 8.0, 'História': 10.0, 'Geografia': 10.0, 'Ens. Religioso': 10.0 }, frequency: 96.5, disciplines_below_6: 0 },
+                            { name: 'IVANILDO ALVES DOS SANTOS', grades: { 'Português': 7.0, 'Inglês': 10.0, 'Arte': 8.0, 'Ed. Física': 8.0, 'Matemática': 9.5, 'Ciências': 7.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 10.0 }, frequency: 96.5, disciplines_below_6: 0 },
+                            { name: 'JOÃO PAULO FERREIRA DA SILVA', grades: { 'Português': 7.0, 'Inglês': 5.0, 'Arte': 6.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.5, 'História': 8.5, 'Geografia': 8.5, 'Ens. Religioso': 6.0 }, frequency: 90.8, disciplines_below_6: 1 },
+                            { name: 'JOELMA NAIARA JERONIMO DA SILVA', grades: { 'Português': 8.5, 'Inglês': 8.0, 'Arte': 8.5, 'Ed. Física': 8.5, 'Matemática': 8.0, 'Ciências': 7.5, 'História': 8.0, 'Geografia': 8.0, 'Ens. Religioso': 9.0 }, frequency: 98.1, disciplines_below_6: 0 },
+                            { name: 'JOSÉ AUGUSTO DO NASCIMENTO CARVALHO', grades: { 'Português': 6.5, 'Inglês': 8.0, 'Arte': 7.0, 'Ed. Física': 5.0, 'Matemática': 4.5, 'Ciências': 7.0, 'História': 7.5, 'Geografia': 5.0, 'Ens. Religioso': 6.0 }, frequency: 83.1, disciplines_below_6: 3 },
+                            { name: 'JOSÉ EDIMILSON JOAQUIM DA SILVA', grades: { 'Português': 0.0, 'Inglês': 6.0, 'Arte': 7.0, 'Ed. Física': 6.0, 'Matemática': 6.0, 'Ciências': 6.0, 'História': 6.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 99.6, disciplines_below_6: 1 },
+                            { name: 'JOSÉ EDINALDO DA SILVA COSTA', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 8.0, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 7.0, 'História': 9.0, 'Geografia': 8.0, 'Ens. Religioso': 9.0 }, frequency: 96.2, disciplines_below_6: 0 },
+                            { name: 'JOSE GONÇALVES DA SILVA', grades: { 'Português': 0.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 6.0, 'Ciências': 0.0, 'História': 2.5, 'Geografia': 6.0, 'Ens. Religioso': 8.0 }, frequency: 99.2, disciplines_below_6: 5 },
+                            { name: 'JOSEFA MARQUES DO NASCIMENTO SILVA', grades: { 'Português': 6.5, 'Inglês': 9.0, 'Arte': 8.5, 'Ed. Física': 8.0, 'Matemática': 10.0, 'Ciências': 8.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 10.0 }, frequency: 98.1, disciplines_below_6: 0 },
+                            { name: 'JOSEILDO DA SILVA', grades: { 'Português': 0.0, 'Inglês': 6.0, 'Arte': 0.0, 'Ed. Física': 0.0, 'Matemática': 0.0, 'Ciências': 0.0, 'História': 0.0, 'Geografia': 0.0, 'Ens. Religioso': 0.0 }, frequency: 87.7, disciplines_below_6: 7 },
+                            { name: 'LINDINALVA SILVA DE GODOΥ', grades: { 'Português': 8.0, 'Inglês': 10.0, 'Arte': 8.5, 'Ed. Física': 9.0, 'Matemática': 10.0, 'Ciências': 8.0, 'História': 9.0, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 99.2, disciplines_below_6: 0 },
+                            { name: 'LUCIANO FERREira DE ARAUJO', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 9.5, 'Ed. Física': 9.5, 'Matemática': 10.0, 'Ciências': 8.5, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 91.9, disciplines_below_6: 0 },
+                            { name: 'MARIA DO SOCORRO MOREIRA ALVES', grades: { 'Português': 8.0, 'Inglês': 9.0, 'Arte': 8.5, 'Ed. Física': 7.0, 'Matemática': 9.0, 'Ciências': 7.0, 'História': 7.5, 'Geografia': 7.5, 'Ens. Religioso': 9.5 }, frequency: 97.7, disciplines_below_6: 0 },
+                            { name: 'MARIA ERLÂNDIA DA SILVA', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 9.5, 'Matemática': 10.0, 'Ciências': 8.5, 'História': 9.0, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 96.2, disciplines_below_6: 0 },
+                            { name: 'MARIA JOSÉ DA SILVA INÁCIO', grades: { 'Português': 8.0, 'Inglês': 9.0, 'Arte': 8.5, 'Ed. Física': 8.0, 'Matemática': 9.0, 'Ciências': 7.0, 'História': 9.0, 'Geografia': 8.0, 'Ens. Religioso': 9.0 }, frequency: 96.2, disciplines_below_6: 0 },
+                            { name: 'MARIA JOSÉ DE MELO FERREIRA', grades: { 'Português': 7.0, 'Inglês': 10.0, 'Arte': 8.5, 'Ed. Física': 9.0, 'Matemática': 8.0, 'Ciências': 7.0, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 9.0 }, frequency: 97.7, disciplines_below_6: 0 },
+                            { name: 'MARIA RAFAELA DA SILVA ALVES', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 9.5, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 10.0, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 100.0, disciplines_below_6: 0 },
+                            { name: 'NAUANA DA SILVA DOS SANTOS', grades: { 'Português': 8.5, 'Inglês': 8.0, 'Arte': 9.0, 'Ed. Física': 8.5, 'Matemática': 8.5, 'Ciências': 7.5, 'História': 9.0, 'Geografia': 9.0, 'Ens. Religioso': 8.0 }, frequency: 93.8, disciplines_below_6: 0 },
+                            { name: 'NIVALDA VIRGULINO LEITE COSTA', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 10.0, 'Ed. Física': 10.0, 'Matemática': 10.0, 'Ciências': 10.0, 'História': 7.0, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 97.7, disciplines_below_6: 0 },
+                            { name: 'RHAYSSA RHAYANE MARCELINO DUQUE FRAZÃO', grades: { 'Português': 9.0, 'Inglês': 8.0, 'Arte': 9.0, 'Ed. Física': 8.0, 'Matemática': 8.5, 'Ciências': 7.0, 'História': 9.0, 'Geografia': 8.5, 'Ens. Religioso': 8.0 }, frequency: 98.8, disciplines_below_6: 0 },
+                            { name: 'ROSA CRISTIANA MOREIRA PONTES', grades: { 'Português': 9.5, 'Inglês': 9.0, 'Arte': 8.0, 'Ed. Física': 7.0, 'Matemática': 7.5, 'Ciências': 7.5, 'História': 7.0, 'Geografia': 7.0, 'Ens. Religioso': 8.0 }, frequency: 94.6, disciplines_below_6: 0 },
+                            { name: 'ROSILMA FERREIRA DA SILVA', grades: { 'Português': 8.0, 'Inglês': 6.0, 'Arte': 8.0, 'Ed. Física': 6.5, 'Matemática': 6.0, 'Ciências': 7.0, 'História': 5.5, 'Geografia': 5.5, 'Ens. Religioso': 5.0 }, frequency: 80.8, disciplines_below_6: 2 },
+                            { name: 'VALÉRIA SIMÃO DA SILVA', grades: { 'Português': 10.0, 'Inglês': 10.0, 'Arte': 8.5, 'Ed. Física': 8.5, 'Matemática': 10.0, 'Ciências': 8.0, 'História': 10.0, 'Geografia': 9.5, 'Ens. Religioso': 10.0 }, frequency: 95.8, disciplines_below_6: 0 },
+                            { name: 'VICTOR RAFAEL DA SILVA GOMES', grades: { 'Português': 9.0, 'Inglês': 8.0, 'Arte': 7.0, 'Ed. Física': 5.0, 'Matemática': 6.0, 'Ciências': 6.5, 'História': 5.0, 'Geografia': 5.0, 'Ens. Religioso': 6.0 }, frequency: 80.4, disciplines_below_6: 3 },
+                            { name: 'WELLYTHON CORREIA DE MORAES', grades: { 'Português': 7.0, 'Inglês': 5.0, 'Arte': 7.0, 'Ed. Física': 5.5, 'Matemática': 9.0, 'Ciências': 7.0, 'História': 8.5, 'Geografia': 8.5, 'Ens. Religioso': 7.0 }, frequency: 90.8, disciplines_below_6: 2 }
+                        ]
+                    },
+                    generalReport: {
+                        'FASE 1': { enrolled: 9, avgGrade: 6.8, avgFrequency: 96.0 },
+                        'FASE 2': { enrolled: 12, avgGrade: 6.6, avgFrequency: 81.0 },
+                        'FASE 3': { enrolled: 20, avgGrade: 5.8, avgFrequency: 78.0 },
+                        'FASE 4': { enrolled: 31, avgGrade: 7.2, avgFrequency: 93.0 }
+                    }
+                }
             };
             
-            // Dados extraídos dos relatórios GERAIS (incluindo todos os matriculados)
-            const generalReportData = {
-                'FASE 1': { enrolled: 3, avgGrade: 4.0, avgFrequency: 36.0 },
-                'FASE 2': { enrolled: 21, avgGrade: 5.5, avgFrequency: 65.0 },
-                'FASE 3': { enrolled: 17, avgGrade: 4.7, avgFrequency: 62.0 },
-                'FASE 4': { enrolled: 22, avgGrade: 6.2, avgFrequency: 75.0 }
-            };
-
-            // Variáveis para armazenar as instâncias dos gráficos
             let charts = {};
             const kpiContainer = document.getElementById('kpi-container');
             const individualView = document.getElementById('individual-view');
             const comparisonView = document.getElementById('comparison-view');
             const dashboardSubtitle = document.getElementById('dashboard-subtitle');
+            const schoolSelector = document.getElementById('school-selector');
+            const viewSelector = document.getElementById('view-selector');
 
-            // Função para calcular métricas de alunos ativos
             function calculateActiveMetrics(students) {
+                if (!students || students.length === 0) return { totalActive: 0, avgGrade: 0, avgFrequency: 0, atRisk: 0, approved: 0, students: [] };
                 const activeStudents = students.filter(student => Object.values(student.grades).some(grade => grade > 0));
                 const totalActive = activeStudents.length;
-                if (totalActive === 0) return { totalActive: 0, avgGrade: 0, avgFrequency: 0, atRisk: 0, approved: 0 };
+                if (totalActive === 0) return { totalActive: 0, avgGrade: 0, avgFrequency: 0, atRisk: 0, approved: 0, students: [] };
 
                 const avgFrequency = activeStudents.reduce((acc, s) => acc + s.frequency, 0) / totalActive;
                 const totalGradesSum = activeStudents.reduce((sum, s) => sum + Object.values(s.grades).reduce((s, g) => s + g, 0), 0);
@@ -202,154 +216,97 @@
                 return { totalActive, avgGrade, avgFrequency, atRisk, approved, students: activeStudents };
             }
 
-            // --- FUNÇÃO PARA RENDERIZAR A VISÃO COMPARATIVA ---
-            function renderComparisonView() {
+            function renderComparisonView(schoolName) {
                 individualView.classList.add('hidden');
                 comparisonView.classList.remove('hidden');
-                dashboardSubtitle.textContent = 'Comparativo entre dados gerais e dados de alunos ativos por fase.';
-
-                const phases = Object.keys(allData);
+                dashboardSubtitle.textContent = `Comparativo para ${schoolName}.`;
+                
+                const schoolData = database[schoolName];
+                const phases = Object.keys(schoolData.phases);
                 const comparisonData = phases.map(phase => {
-                    const general = generalReportData[phase];
-                    const activeMetrics = calculateActiveMetrics(allData[phase]);
-                    return {
-                        phase,
-                        general,
-                        active: {
-                            enrolled: activeMetrics.totalActive,
-                            avgGrade: activeMetrics.avgGrade,
-                            avgFrequency: activeMetrics.avgFrequency,
-                        }
-                    };
+                    const general = schoolData.generalReport[phase];
+                    const activeMetrics = calculateActiveMetrics(schoolData.phases[phase]);
+                    return { phase, general, active: { enrolled: activeMetrics.totalActive, avgGrade: activeMetrics.avgGrade, avgFrequency: activeMetrics.avgFrequency } };
                 });
 
-                // Destrói gráficos antigos
                 Object.values(charts).forEach(chart => chart?.destroy());
                 
-                // Gráfico 1: Comparativo de Média de Notas
                 const gradesChartOptions = {
-                    series: [{
-                        name: 'Média Geral (Relatório)',
-                        data: comparisonData.map(d => d.general.avgGrade.toFixed(1))
-                    }, {
-                        name: 'Média Alunos Ativos',
-                        data: comparisonData.map(d => d.active.avgGrade.toFixed(1))
-                    }],
-                    chart: { type: 'bar', height: 400, toolbar: { show: true, tools: { download: true } }},
+                    series: [{ name: 'Média Geral (Relatório)', data: comparisonData.map(d => d.general.avgGrade.toFixed(1)) }, { name: 'Média Alunos Ativos', data: comparisonData.map(d => d.active.avgGrade.toFixed(1)) }],
+                    chart: { type: 'bar', height: 400, toolbar: { show: true }},
                     plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
                     dataLabels: { enabled: true, formatter: (val) => val, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }},
-                    stroke: { show: true, width: 2, colors: ['transparent'] },
                     xaxis: { categories: phases },
                     yaxis: { title: { text: 'Nota Média' }, min: 0, max: 10 },
-                    fill: { opacity: 1 },
-                    colors: ['#ef4444', '#22c55e'], // Vermelho para geral, Verde para ativo
+                    colors: ['#ef4444', '#22c55e'],
                     title: { text: 'Impacto da Participação na Média de Notas', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
                     tooltip: { y: { formatter: (val) => `${val} pontos` } }
                 };
                 charts.comparisonGrades = new ApexCharts(document.querySelector("#comparison-grades-chart"), gradesChartOptions);
                 charts.comparisonGrades.render();
 
-                // Gráfico 2: Comparativo de Frequência
                 const freqChartOptions = {
-                    series: [{
-                        name: 'Frequência Geral (Relatório)',
-                        data: comparisonData.map(d => d.general.avgFrequency.toFixed(1))
-                    }, {
-                        name: 'Frequência Alunos Ativos',
-                        data: comparisonData.map(d => d.active.avgFrequency.toFixed(1))
-                    }],
+                    series: [{ name: 'Frequência Geral (Relatório)', data: comparisonData.map(d => d.general.avgFrequency.toFixed(1))}, { name: 'Frequência Alunos Ativos', data: comparisonData.map(d => d.active.avgFrequency.toFixed(1)) }],
                     chart: { type: 'bar', height: 400, toolbar: { show: true } },
                     plotOptions: { bar: { horizontal: false, columnWidth: '55%', endingShape: 'rounded' } },
                     dataLabels: { enabled: true, formatter: (val) => `${val}%`, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] }},
                     xaxis: { categories: phases },
                     yaxis: { title: { text: 'Frequência Média (%)' }, min: 0, max: 100 },
-                    colors: ['#f59e0b', '#3b82f6'], // Laranja para geral, Azul para ativo
+                    colors: ['#f59e0b', '#3b82f6'],
                     title: { text: 'Impacto da Participação na Frequência Média', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
                     tooltip: { y: { formatter: (val) => `${val}%` } }
                 };
                 charts.comparisonFrequency = new ApexCharts(document.querySelector("#comparison-frequency-chart"), freqChartOptions);
                 charts.comparisonFrequency.render();
 
-                // Gráfico 3: Participação de Alunos
                 const participationChartOptions = {
-                    series: [{
-                        name: 'Alunos Ativos',
-                        data: comparisonData.map(d => d.active.enrolled)
-                    }, {
-                        name: 'Alunos Evadidos / Inativos',
-                        data: comparisonData.map(d => d.general.enrolled - d.active.enrolled)
-                    }],
+                    series: [{ name: 'Alunos Ativos', data: comparisonData.map(d => d.active.enrolled) }, { name: 'Alunos Evadidos / Inativos', data: comparisonData.map(d => d.general.enrolled - d.active.enrolled) }],
                     chart: { type: 'bar', height: 400, stacked: true, toolbar: { show: true } },
                     plotOptions: { bar: { horizontal: true } },
-                    stroke: { width: 1, colors: ['#fff'] },
                     xaxis: { categories: phases, title: { text: 'Número de Alunos' } },
-                    yaxis: { title: { text: 'Fases' } },
                     colors: ['#16a34a', '#9ca3af'],
                     title: { text: 'Comparativo de Alunos Matriculados vs. Ativos', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
-                    fill: { opacity: 1 },
-                    legend: { position: 'top', horizontalAlign: 'left', offsetX: 40 }
+                    legend: { position: 'top', horizontalAlign: 'left' }
                 };
                 charts.comparisonParticipation = new ApexCharts(document.querySelector("#comparison-participation-chart"), participationChartOptions);
                 charts.comparisonParticipation.render();
             }
             
-            // --- FUNÇÃO PARA RENDERIZAR A VISÃO INDIVIDUAL ---
-            function renderIndividualView(className) {
+            function renderIndividualView(schoolName, phaseName) {
                 comparisonView.classList.add('hidden');
                 individualView.classList.remove('hidden');
-                dashboardSubtitle.textContent = 'Análise de turmas com base nos estudantes com participação efetiva.';
+                dashboardSubtitle.textContent = `Análise de ${phaseName} - ${schoolName}.`;
 
-                const rawData = allData[className];
+                const rawData = database[schoolName].phases[phaseName];
                 const { totalActive, avgGrade, avgFrequency, atRisk, approved, students } = calculateActiveMetrics(rawData);
                 
                 kpiContainer.innerHTML = `
-                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500">
-                        <h2 class="text-sm font-medium text-slate-500">Alunos Ativos</h2>
-                        <p class="text-3xl font-bold text-slate-800 mt-1">${totalActive} <span class="text-base font-normal text-slate-500">de ${rawData.length}</span></p>
-                    </div>
-                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500">
-                        <h2 class="text-sm font-medium text-slate-500">Média Geral das Notas</h2>
-                        <p class="text-3xl font-bold text-slate-800 mt-1">${avgGrade.toFixed(1)}</p>
-                    </div>
-                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-amber-500">
-                        <h2 class="text-sm font-medium text-slate-500">Média de Frequência</h2>
-                        <p class="text-3xl font-bold text-slate-800 mt-1">${avgFrequency.toFixed(1)}%</p>
-                    </div>
-                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500">
-                        <h2 class="text-sm font-medium text-slate-500">Risco (Freq. < 75%)</h2>
-                        <p class="text-3xl font-bold text-slate-800 mt-1">${atRisk}</p>
-                    </div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-blue-500"><h2 class="text-sm font-medium text-slate-500">Alunos Ativos</h2><p class="text-3xl font-bold text-slate-800 mt-1">${totalActive} <span class="text-base font-normal text-slate-500">de ${rawData.length}</span></p></div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-green-500"><h2 class="text-sm font-medium text-slate-500">Média Geral das Notas</h2><p class="text-3xl font-bold text-slate-800 mt-1">${avgGrade.toFixed(1)}</p></div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-amber-500"><h2 class="text-sm font-medium text-slate-500">Média de Frequência</h2><p class="text-3xl font-bold text-slate-800 mt-1">${avgFrequency.toFixed(1)}%</p></div>
+                    <div class="dashboard-card bg-white p-6 rounded-lg shadow-md border-l-4 border-red-500"><h2 class="text-sm font-medium text-slate-500">Risco (Freq. < 75%)</h2><p class="text-3xl font-bold text-slate-800 mt-1">${atRisk}</p></div>
                 `;
                 
                 Object.values(charts).forEach(chart => chart?.destroy());
-
-                const emptyState = (selector) => {
-                    document.querySelector(selector).innerHTML = `<div class="flex items-center justify-center h-full"><p class='text-center text-slate-500'>Não há dados para exibir para esta turma.</p></div>`;
-                };
-
-                if (totalActive === 0) {
-                    emptyState("#frequency-chart"); emptyState("#status-chart"); emptyState("#grades-chart");
-                    return;
-                }
+                const emptyState = (selector) => { document.querySelector(selector).innerHTML = `<div class="flex items-center justify-center h-full"><p class='text-center text-slate-500'>Não há dados para exibir.</p></div>`; };
+                if (totalActive === 0) { emptyState("#frequency-chart"); emptyState("#status-chart"); emptyState("#grades-chart"); return; }
 
                 const frequencyChartOptions = {
                     series: [{ name: 'Frequência', data: students.map(s => s.frequency.toFixed(1)) }],
-                    chart: { type: 'bar', height: 350 + students.length * 5, toolbar: { show: false } },
-                    plotOptions: { bar: { borderRadius: 4, horizontal: true, distributed: true } },
-                    dataLabels: { enabled: true, formatter: val => `${val}%`, style: { colors: ['#fff'] } },
-                    xaxis: { categories: students.map(s => s.name), title: { text: 'Percentual de Frequência (%)' } },
+                    chart: { type: 'bar', height: 350 + students.length * 15, toolbar: { show: false } },
+                    plotOptions: { bar: { borderRadius: 4, horizontal: true, distributed: true, barHeight: '80%' } },
+                    dataLabels: { enabled: true, formatter: val => `${val}%`, style: { colors: ['#fff'], fontSize: '12px' }, offsetX: -5 },
+                    xaxis: { categories: students.map(s => s.name.split(' ').slice(0, 2).join(' ')), labels: { show: true } },
+                    yaxis: { labels: { maxWidth: 150 }},
                     title: { text: 'Frequência por Aluno Ativo', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
                     legend: { show: false },
-                    colors: ['#3b82f6', '#16a34a', '#ef4444', '#f97316', '#8b5cf6', '#10b981', '#f59e0b', '#d946ef', '#64748b', '#0ea5e9', '#e11d48', '#facc15'],
                     tooltip: { y: { formatter: val => `${val}%` } }
                 };
                 charts.frequency = new ApexCharts(document.querySelector("#frequency-chart"), frequencyChartOptions);
                 charts.frequency.render();
 
                 const statusChartOptions = {
-                    series: [approved, atRisk],
-                    chart: { type: 'donut', height: 350 },
-                    labels: ['Situação Confortável', 'Risco (Frequência Baixa)'],
+                    series: [approved, atRisk], chart: { type: 'donut', height: 350 }, labels: ['Situação Confortável', 'Risco (Frequência Baixa)'],
                     title: { text: 'Panorama Geral dos Alunos Ativos', align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
                     colors: ['#22c55e', '#f59e0b'], legend: { position: 'bottom' }
                 };
@@ -359,42 +316,68 @@
                 const allSubjects = [...new Set(students.flatMap(s => Object.keys(s.grades)))];
                 const subjectAverages = allSubjects.map(subject => {
                     let total = 0, count = 0;
-                    students.forEach(student => {
-                        if (student.grades[subject] !== undefined) {
-                            total += student.grades[subject];
-                            count++;
-                        }
-                    });
+                    students.forEach(student => { if (student.grades[subject] !== undefined) { total += student.grades[subject]; count++; }});
                     return count > 0 ? (total / count) : 0;
                 });
-
                 const gradesChartOptions = {
                     series: [{ name: 'Média da Turma', data: subjectAverages.map(avg => avg.toFixed(1)) }],
                     chart: { type: 'bar', height: 350, toolbar: { show: false } },
                     plotOptions: { bar: { borderRadius: 4, dataLabels: { position: 'top' } } },
                     dataLabels: { enabled: true, offsetY: -20, style: { fontSize: '12px', colors: ["#304758"] } },
-                    xaxis: { categories: allSubjects, position: 'bottom' },
+                    xaxis: { categories: allSubjects },
                     yaxis: { title: { text: 'Nota Média' }, min: 0, max: 10 },
-                    title: { text: `Média de Notas por Disciplina (${className})`, align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
+                    title: { text: `Média de Notas por Disciplina (${phaseName})`, align: 'left', style: { fontSize: '18px', fontWeight: '600', color: '#334155' } },
                     colors: ['#1d4ed8']
                 };
                 charts.grades = new ApexCharts(document.querySelector("#grades-chart"), gradesChartOptions);
                 charts.grades.render();
             }
+            
+            function updateView() {
+                const selectedSchool = schoolSelector.value;
+                const selectedView = viewSelector.value;
+                if (selectedView === 'Comparativo Real') {
+                    renderComparisonView(selectedSchool);
+                } else {
+                    renderIndividualView(selectedSchool, selectedView);
+                }
+            }
+            
+            function populateViewSelector(schoolName) {
+                const schoolData = database[schoolName];
+                const phases = Object.keys(schoolData.phases);
+                viewSelector.innerHTML = '';
+                phases.forEach(phase => {
+                    const option = document.createElement('option');
+                    option.value = phase;
+                    option.textContent = phase;
+                    viewSelector.appendChild(option);
+                });
+                const comparisonOption = document.createElement('option');
+                comparisonOption.value = 'Comparativo Real';
+                comparisonOption.textContent = 'Comparativo Real';
+                viewSelector.appendChild(comparisonOption);
+            }
 
             // --- INICIALIZAÇÃO E EVENTOS ---
-            const classSelector = document.getElementById('class-selector');
-            
-            classSelector.addEventListener('change', (e) => {
-                const selectedValue = e.target.value;
-                if (selectedValue === 'Comparativo Real') {
-                    renderComparisonView();
-                } else {
-                    renderIndividualView(selectedValue);
-                }
+            const schoolNames = Object.keys(database);
+            schoolNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                schoolSelector.appendChild(option);
             });
+            
+            schoolSelector.addEventListener('change', () => {
+                populateViewSelector(schoolSelector.value);
+                updateView();
+            });
+            
+            viewSelector.addEventListener('change', updateView);
 
-            renderIndividualView(classSelector.value); // Carrega a primeira turma por padrão
+            // Initial Load
+            populateViewSelector(schoolSelector.value);
+            updateView();
             document.getElementById('generation-date').textContent = new Date().toLocaleString('pt-BR');
         });
     </script>
